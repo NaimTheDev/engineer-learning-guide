@@ -7,6 +7,7 @@ import {
   getRhythm,
   getUnfinishedLessons,
   getWeekPlan,
+  isNewer,
   progressReducer,
   summarizePlan,
   type ProgressAction,
@@ -147,5 +148,36 @@ describe('rhythm', () => {
 
   it('reports zero without a gap penalty', () => {
     expect(getRhythm(createInitialState()).streakWeeks).toBe(0);
+  });
+});
+
+describe('sync timestamps', () => {
+  it('leaves a fresh state unstamped so any synced copy wins', () => {
+    const fresh = createInitialState();
+    expect(fresh.updatedAt).toBeUndefined();
+    const edited = apply(fresh, [{ type: 'setWeekMode', mode: 'light' }, '2026-01-05T10:00:00Z']);
+    expect(isNewer(edited, fresh)).toBe(true);
+    expect(isNewer(fresh, edited)).toBe(false);
+  });
+
+  it('stamps local edits, including imports and resets', () => {
+    const t = '2026-01-05T10:00:00Z';
+    const s = createInitialState();
+    expect(apply(s, [{ type: 'setText', slug: 'lesson-1', field: 'explanation', value: 'x' }, t]).updatedAt).toBe(
+      '2026-01-05T10:00:00.000Z',
+    );
+    expect(apply(s, [{ type: 'replaceState', state: { ...s } }, t]).updatedAt).toBe('2026-01-05T10:00:00.000Z');
+    expect(apply(s, [{ type: 'reset' }, t]).updatedAt).toBe('2026-01-05T10:00:00.000Z');
+  });
+
+  it('keeps the timestamp of state from another tab or device', () => {
+    const remote = { ...createInitialState(), updatedAt: '2026-01-01T00:00:00.000Z' };
+    const s = apply(createInitialState(), [{ type: 'replaceState', state: remote, external: true }, '2026-02-01T00:00:00Z']);
+    expect(s.updatedAt).toBe('2026-01-01T00:00:00.000Z');
+  });
+
+  it('does not stamp no-op actions', () => {
+    const s = createInitialState();
+    expect(apply(s, [{ type: 'visitStep', slug: 'lesson-1', step: 'practice' }, '2026-01-05T10:00:00Z'])).toBe(s);
   });
 });

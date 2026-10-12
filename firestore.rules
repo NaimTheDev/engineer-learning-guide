@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Single-user app with no auth: only this one document is reachable.
+    match /engineeros/state {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasOnly(['progress', 'savedAt'])
+        && request.resource.data.progress is map;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterEach, beforeEach } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -28,3 +28,9 @@ if (!window.matchMedia) {
 // jsdom defines scrollTo but only logs "not implemented".
 window.scrollTo = (() => {}) as typeof window.scrollTo;
 Element.prototype.scrollIntoView ??= function () {};
+
+// Keep tests off the network: the Firestore copy never connects.
+vi.mock('@/lib/sync', () => ({
+  subscribeRemote: () => () => {},
+  pushRemote: () => Promise.resolve(),
+}));

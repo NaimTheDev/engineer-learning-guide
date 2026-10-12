@@ -164,6 +164,7 @@ export function validateProgress(v: unknown): ProgressState {
     readiness,
     settings: { weekMode: weekMode as WeekMode },
     createdAt: optIso(v.createdAt, 'createdAt') ?? new Date().toISOString(),
+    updatedAt: optIso(v.updatedAt, 'updatedAt'),
   };
 }
 

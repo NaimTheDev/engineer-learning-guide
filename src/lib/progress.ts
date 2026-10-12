@@ -68,6 +68,8 @@ export interface ProgressState {
   readiness: Partial<Record<CompetencyId, ReadinessEntry>>;
   settings: Settings;
   createdAt: string;
+  /** Last local edit. Unset on a fresh state so any synced copy wins over it. */
+  updatedAt?: string;
 }
 
 export function createInitialState(now = new Date()): ProgressState {
@@ -78,6 +80,11 @@ export function createInitialState(now = new Date()): ProgressState {
     settings: { weekMode: 'standard' },
     createdAt: now.toISOString(),
   };
+}
+
+/** True when `a` holds newer edits than `b`. A state that has never been edited is oldest. */
+export function isNewer(a: ProgressState, b: ProgressState): boolean {
+  return (a.updatedAt ?? '') > (b.updatedAt ?? '');
 }
 
 export function emptyLessonProgress(): LessonProgress {
@@ -117,7 +124,8 @@ export type ProgressAction =
   | { type: 'setReadinessNotes'; competency: CompetencyId; notes: string }
   | { type: 'addEvidence'; competency: CompetencyId; item: EvidenceItem }
   | { type: 'removeEvidence'; competency: CompetencyId; id: string }
-  | { type: 'replaceState'; state: ProgressState }
+  /** `external` marks state arriving from another tab or device, which keeps its own `updatedAt`. */
+  | { type: 'replaceState'; state: ProgressState; external?: boolean }
   | { type: 'reset' };
 
 function updateLesson(
@@ -156,6 +164,12 @@ export function progressReducer(
   action: ProgressAction,
   now: Date = new Date(),
 ): ProgressState {
+  const next = applyAction(state, action, now);
+  if (next === state || (action.type === 'replaceState' && action.external)) return next;
+  return { ...next, updatedAt: now.toISOString() };
+}
+
+function applyAction(state: ProgressState, action: ProgressAction, now: Date): ProgressState {
   const ts = now.toISOString();
   switch (action.type) {
     case 'setStepDone':

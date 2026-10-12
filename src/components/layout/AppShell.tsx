@@ -63,7 +63,7 @@ function SidebarProgress() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { persisted } = useProgress();
+  const { persisted, syncStatus } = useProgress();
   const location = useLocation();
   const main = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
@@ -137,6 +137,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div role="status" className="mx-auto mb-6 max-w-5xl rounded-lg border border-warn/30 bg-warn/10 px-4 py-3 text-[13.5px] text-warn">
             Your browser is blocking local storage, so progress can't be saved right now. Export a backup from Settings before
             closing this tab.
+          </div>
+        )}
+        {syncStatus === 'error' && (
+          <div role="status" className="mx-auto mb-6 max-w-5xl rounded-lg border border-warn/30 bg-warn/10 px-4 py-3 text-[13.5px] text-warn">
+            Progress couldn't be synced to the cloud. It is still saved in this browser and will sync after a reload.
           </div>
         )}
         <div className="mx-auto max-w-5xl">{children}</div>
